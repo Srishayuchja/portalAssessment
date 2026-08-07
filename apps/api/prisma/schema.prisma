@@ -1,0 +1,72 @@
+// Prisma schema for DEALPORT admin API
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum StockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+  LOW_STOCK
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model Product {
+  id             String        @id @default(uuid())
+  name           String
+  description    String?
+
+  price          Decimal       @db.Decimal(10, 2)
+  discountPrice  Decimal?      @db.Decimal(10, 2)
+  taxIncluded    Boolean       @default(true)
+
+  expirationStart DateTime?
+  expirationEnd   DateTime?
+
+  stockQuantity  Int           @default(0)
+  unlimitedStock Boolean       @default(false)
+  stockStatus    StockStatus   @default(IN_STOCK)
+  featured       Boolean       @default(false)
+  totalOrders    Int           @default(0)
+
+  images         String[]      @default([])
+  tags           String[]      @default([])
+  colors         String[]      @default([])
+
+  status         ProductStatus @default(DRAFT)
+
+  category       Category?     @relation(fields: [categoryId], references: [id])
+  categoryId     String?
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([status])
+  @@index([name])
+}
