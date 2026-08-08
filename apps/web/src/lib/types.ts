@@ -4,6 +4,7 @@ export type StockStatus = 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
 export interface Category {
   id: string;
   name: string;
+  image: string | null;
   createdAt: string;
 }
 

@@ -8,6 +8,12 @@ const ADMIN_PASSWORD = 'Admin@123';
 
 const CATEGORY_NAMES = ['Electronic', 'Fashion', 'Home', 'Beauty', 'Sports'];
 
+const CATEGORY_IMAGES: Record<string, string> = {
+  Electronic: '/assets/images/electronic.png',
+  Fashion: '/assets/images/fashion.png',
+  Home: '/assets/images/home.png',
+};
+
 // Ordered so the last 4 entries (the ones matching the Dashboard.png reference) end up
 // with the most recent createdAt timestamps and the highest totalOrders — that makes them
 // the ones the real API naturally returns for the Top Products / Best Selling widgets,
@@ -24,6 +30,7 @@ const PRODUCTS = [
     status: 'DRAFT',
     tags: ['wearable', 'fitness'],
     colors: ['#111827'],
+    image: '/assets/images/tracker.png',
   },
   {
     name: 'Leather Wallet',
@@ -36,6 +43,7 @@ const PRODUCTS = [
     status: 'PUBLISHED',
     tags: ['wallet', 'accessories'],
     colors: ['#78350f', '#111827'],
+    image: '/assets/images/wallet.png',
   },
   {
     name: 'Electric Hair Trimmer',
@@ -48,6 +56,7 @@ const PRODUCTS = [
     status: 'PUBLISHED',
     tags: ['grooming'],
     colors: ['#111827'],
+    image: '/assets/images/trimmer.png',
   },
   {
     name: 'Ceramic Cookware Set',
@@ -87,6 +96,45 @@ const PRODUCTS = [
     colors: ['#f3f4f6', '#111827'],
   },
   {
+    name: 'Assorted Cross Bag',
+    description: 'Compact genuine leather cross body bag with adjustable strap.',
+    category: 'Fashion',
+    price: 80.0,
+    totalOrders: 506,
+    stockQuantity: 60,
+    stockStatus: 'IN_STOCK',
+    status: 'PUBLISHED',
+    tags: ['bag', 'accessories'],
+    colors: ['#78350f'],
+    image: '/assets/images/bag.png',
+  },
+  {
+    name: 'T-shirt',
+    description: 'Everyday soft cotton t-shirt, regular fit, machine washable.',
+    category: 'Fashion',
+    price: 35.4,
+    totalOrders: 266,
+    stockQuantity: 500,
+    stockStatus: 'IN_STOCK',
+    status: 'PUBLISHED',
+    tags: ['apparel', 'basics'],
+    colors: ['#f3f4f6', '#111827'],
+    image: '/assets/images/tshirt.png',
+  },
+  {
+    name: 'Nike Air Jordan',
+    description: 'Iconic high-top sneaker with premium leather upper and classic colorway.',
+    category: 'Fashion',
+    price: 72.4,
+    totalOrders: 56,
+    stockQuantity: 0,
+    stockStatus: 'OUT_OF_STOCK',
+    status: 'PUBLISHED',
+    tags: ['shoes', 'sneakers'],
+    colors: ['#dc2626', '#111827'],
+    image: '/assets/images/nikeShoe.png',
+  },
+  {
     name: 'Apple iPhone 13',
     description:
       'The iPhone 13 delivers cutting-edge performance with the A15 Bionic chip, an immersive Super Retina XDR display, advanced dual-camera system, and exceptional battery life.',
@@ -100,42 +148,7 @@ const PRODUCTS = [
     featured: true,
     tags: ['smartphone', 'apple'],
     colors: ['#111827', '#e5e7eb'],
-  },
-  {
-    name: 'Nike Air Jordan',
-    description: 'Iconic high-top sneaker with premium leather upper and classic colorway.',
-    category: 'Fashion',
-    price: 172.0,
-    totalOrders: 56,
-    stockQuantity: 0,
-    stockStatus: 'OUT_OF_STOCK',
-    status: 'PUBLISHED',
-    tags: ['shoes', 'sneakers'],
-    colors: ['#dc2626', '#111827'],
-  },
-  {
-    name: 'T-shirt',
-    description: 'Everyday soft cotton t-shirt, regular fit, machine washable.',
-    category: 'Fashion',
-    price: 19.99,
-    totalOrders: 266,
-    stockQuantity: 500,
-    stockStatus: 'IN_STOCK',
-    status: 'PUBLISHED',
-    tags: ['apparel', 'basics'],
-    colors: ['#f3f4f6', '#111827'],
-  },
-  {
-    name: 'Cross Bag',
-    description: 'Compact genuine leather cross body bag with adjustable strap.',
-    category: 'Fashion',
-    price: 80.0,
-    totalOrders: 506,
-    stockQuantity: 60,
-    stockStatus: 'IN_STOCK',
-    status: 'PUBLISHED',
-    tags: ['bag', 'accessories'],
-    colors: ['#78350f'],
+    image: '/assets/images/iphone.png',
   },
 ] as const;
 
@@ -157,8 +170,8 @@ async function main() {
     CATEGORY_NAMES.map((name) =>
       prisma.category.upsert({
         where: { name },
-        update: {},
-        create: { name },
+        update: { image: CATEGORY_IMAGES[name] },
+        create: { name, image: CATEGORY_IMAGES[name] },
       }),
     ),
   );
@@ -178,7 +191,7 @@ async function main() {
         stockStatus: p.stockStatus,
         featured: 'featured' in p ? p.featured : false,
         totalOrders: p.totalOrders,
-        images: [`https://picsum.photos/seed/dealport-${index}/400/400`],
+        images: ['image' in p ? p.image : `https://picsum.photos/seed/dealport-${index}/400/400`],
         tags: [...p.tags],
         colors: [...p.colors],
         status: p.status,

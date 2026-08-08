@@ -1,30 +1,52 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Plus, Search, Trash2 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
-import type { Product, ProductStatus } from '@/lib/types';
+import type { Category, Product, ProductStatus } from '@/lib/types';
 import { ProductStatusBadge, StockBadge } from '@/components/StatusBadge';
 
 const LIMIT = 8;
 
 export default function ProductListPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProductList />
+    </Suspense>
+  );
+}
+
+function ProductList() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<ProductStatus | ''>('');
+  const [categoryId, setCategoryId] = useState(searchParams.get('categoryId') ?? '');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.getCategories().then(setCategories).catch(() => setCategories([]));
+  }, []);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       setIsLoading(true);
       setError(null);
       api
-        .getProducts({ search: search || undefined, status: status || undefined, page, limit: LIMIT })
+        .getProducts({
+          search: search || undefined,
+          status: status || undefined,
+          categoryId: categoryId || undefined,
+          page,
+          limit: LIMIT,
+        })
         .then((res) => {
           setProducts(res.data);
           setTotal(res.meta.total);
@@ -34,7 +56,7 @@ export default function ProductListPage() {
         .finally(() => setIsLoading(false));
     }, 250);
     return () => clearTimeout(timeout);
-  }, [search, status, page]);
+  }, [search, status, categoryId, page]);
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this product?')) return;
@@ -60,7 +82,7 @@ export default function ProductListPage() {
                 setSearch(e.target.value);
               }}
               placeholder="Search products..."
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pr-3 pl-9 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pr-3 pl-9 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -70,17 +92,33 @@ export default function ProductListPage() {
               setPage(1);
               setStatus(e.target.value as ProductStatus | '');
             }}
-            className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+            className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           >
             <option value="">All statuses</option>
             <option value="PUBLISHED">Published</option>
             <option value="DRAFT">Draft</option>
           </select>
+
+          <select
+            value={categoryId}
+            onChange={(e) => {
+              setPage(1);
+              setCategoryId(e.target.value);
+            }}
+            className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+          >
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <Link
           href="/products/new"
-          className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
         >
           <Plus size={16} />
           Add Product

@@ -29,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar />
-        <main className="flex-1 overflow-y-auto bg-gray-50 px-5 pt-[52px] pb-6">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-gray-50 px-5 pt-5 pb-6">{children}</main>
       </div>
     </div>
   );

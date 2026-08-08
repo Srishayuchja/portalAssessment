@@ -18,7 +18,7 @@ export default async function ComingSoonPage({
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center rounded-lg border border-gray-200 bg-white py-24 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Construction size={28} />
       </div>
       <h2 className="text-lg font-semibold text-gray-900">{label} — Coming Soon</h2>
@@ -28,7 +28,7 @@ export default async function ComingSoonPage({
       </p>
       <Link
         href="/dashboard"
-        className="mt-6 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+        className="mt-6 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
       >
         Back to Dashboard
       </Link>

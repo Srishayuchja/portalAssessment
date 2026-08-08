@@ -2,9 +2,9 @@ import clsx from 'clsx';
 import type { ProductStatus, StockStatus } from '@/lib/types';
 
 const STOCK_STYLES: Record<StockStatus, string> = {
-  IN_STOCK: 'bg-emerald-50 text-emerald-700',
-  LOW_STOCK: 'bg-amber-50 text-amber-700',
-  OUT_OF_STOCK: 'bg-red-50 text-red-700',
+  IN_STOCK: 'bg-success/10 text-success',
+  LOW_STOCK: 'bg-pending/10 text-pending',
+  OUT_OF_STOCK: 'bg-error/10 text-error',
 };
 
 const STOCK_LABELS: Record<StockStatus, string> = {
@@ -14,7 +14,7 @@ const STOCK_LABELS: Record<StockStatus, string> = {
 };
 
 const STATUS_STYLES: Record<ProductStatus, string> = {
-  PUBLISHED: 'bg-emerald-50 text-emerald-700',
+  PUBLISHED: 'bg-success/10 text-success',
   DRAFT: 'bg-gray-100 text-gray-600',
 };
 

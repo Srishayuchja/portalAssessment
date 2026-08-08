@@ -10,6 +10,21 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* Secondary accent (Details, View Insight, See more, Add New, All product,
+     Sales by Country bars) from the kit's Color Scheme.svg. Edit here to
+     restyle every instance at once. */
+  --color-accent: #6467f2;
+  /* Primary brand green ("Ocean Green") from the kit's Color Scheme.png.
+     Edit here to restyle every instance at once. */
+  --color-primary: #4ea674;
+  /* Semantic state colors from the kit's Color Scheme.png (Success,
+     Pending, Error). Edit here to restyle every instance at once. */
+  --color-success: #21c45d;
+  --color-pending: #f0d411;
+  --color-error: #ef4343;
+  /* Cyprus (Secondary Brand) from the kit's Color Scheme.png. Used for the
+     big stat values ($350K etc.) and their inline labels. */
+  --color-secondary: #023337;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,4 +38,61 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Card/section title typography (StatCard, Report, Transaction, Top Products,
+   Best Selling, Add New Product). Edit here to restyle every instance at once. */
+.card-title {
+  font-family: var(--font-lato), sans-serif;
+  font-weight: 700;
+  font-size: clamp(13px, 1.18vw, 17px);
+  line-height: clamp(20px, 1.81vw, 26px);
+  letter-spacing: 0%;
+}
+
+/* "Last 7 days" subtitle on the stat cards. Edit here to restyle every instance at once. */
+.card-subtitle {
+  font-family: var(--font-lato), sans-serif;
+  font-weight: 400;
+  font-size: clamp(10px, 0.90vw, 13px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* Big stat value ($350K, 10.7K, 509...) on the stat cards. Edit here to restyle every instance at once. */
+.card-value {
+  font-family: var(--font-lato), sans-serif;
+  font-weight: 700;
+  font-size: clamp(24px, 2.08vw, 30px);
+  line-height: 1;
+  letter-spacing: 0%;
+}
+
+/* Slightly smaller variant of .card-value, used for the Pending & Canceled
+   column values (509, 94). Edit here to restyle both at once. */
+.card-value--sm {
+  font-size: clamp(20px, 1.74vw, 25px);
+}
+
+/* Transaction table row content (No, Id Customer, Order Date, Status, Amount
+   values) — excludes the header label row. Edit here to restyle every
+   instance at once. */
+.table-cell {
+  font-family: var(--font-lato), sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0.3px;
+  color: #000000;
+}
+
+/* Transaction table header labels (No, Id Customer, Order Date, Status,
+   Amount column headings). Edit here to restyle every instance at once. */
+.table-label {
+  font-family: var(--font-lato), sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0%;
+  color: #7c7c7c;
 }

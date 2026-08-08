@@ -29,7 +29,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
         <div className="mb-8 flex items-center justify-center gap-1 text-2xl font-bold">
           <span className="text-gray-900">DEALP</span>
-          <span className="text-emerald-600">✱</span>
+          <span className="text-primary">✱</span>
           <span className="text-gray-900">RT</span>
         </div>
 
@@ -47,7 +47,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -61,7 +61,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -72,7 +72,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-60"
+            className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
             {isSubmitting ? 'Signing in...' : 'Sign in'}
           </button>

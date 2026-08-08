@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState, type FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { X } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import type { Category, StockStatus } from '@/lib/types';
@@ -9,7 +9,17 @@ import type { Category, StockStatus } from '@/lib/types';
 const COLOR_SWATCHES = ['#a7f3d0', '#fca5a5', '#93c5fd', '#fde68a', '#111827'];
 
 export default function AddProductPage() {
+  return (
+    <Suspense fallback={null}>
+      <AddProductForm />
+    </Suspense>
+  );
+}
+
+function AddProductForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromProductId = searchParams.get('from');
   const [categories, setCategories] = useState<Category[]>([]);
 
   const [name, setName] = useState('');
@@ -36,6 +46,30 @@ export default function AddProductPage() {
   useEffect(() => {
     api.getCategories().then(setCategories).catch(() => setCategories([]));
   }, []);
+
+  useEffect(() => {
+    if (!fromProductId) return;
+    api
+      .getProduct(fromProductId)
+      .then((product) => {
+        setName(product.name);
+        setDescription(product.description ?? '');
+        setPrice(product.price);
+        setDiscountPrice(product.discountPrice ?? '');
+        setTaxIncluded(product.taxIncluded);
+        setExpirationStart(product.expirationStart?.slice(0, 10) ?? '');
+        setExpirationEnd(product.expirationEnd?.slice(0, 10) ?? '');
+        setStockQuantity(String(product.stockQuantity));
+        setUnlimitedStock(product.unlimitedStock);
+        setStockStatus(product.stockStatus);
+        setFeatured(product.featured);
+        setCategoryId(product.categoryId ?? '');
+        setTags(product.tags);
+        setImages(product.images);
+        setColors(product.colors);
+      })
+      .catch(() => {});
+  }, [fromProductId]);
 
   function addTag() {
     const value = tagInput.trim();
@@ -91,7 +125,7 @@ export default function AddProductPage() {
   }
 
   const inputClass =
-    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500';
+    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary';
   const labelClass = 'mb-1 block text-sm font-medium text-gray-700';
 
   return (
@@ -109,7 +143,7 @@ export default function AddProductPage() {
           <button
             onClick={(e) => handleSave('PUBLISHED', e)}
             disabled={isSubmitting}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60"
           >
             Publish Product
           </button>
@@ -323,7 +357,7 @@ export default function AddProductPage() {
                   {tags.map((tag) => (
                     <span
                       key={tag}
-                      className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+                      className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
                     >
                       {tag}
                       <button type="button" onClick={() => setTags((prev) => prev.filter((t) => t !== tag))}>
@@ -345,7 +379,7 @@ export default function AddProductPage() {
                     onClick={() => toggleColor(color)}
                     style={{ backgroundColor: color }}
                     className={`h-8 w-8 rounded-full border-2 ${
-                      colors.includes(color) ? 'border-emerald-600' : 'border-transparent'
+                      colors.includes(color) ? 'border-primary' : 'border-transparent'
                     }`}
                     aria-label={color}
                   />
