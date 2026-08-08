@@ -59,10 +59,12 @@ export class ProductsService {
   }
 
   create(dto: CreateProductDto) {
-    const { categoryId, ...rest } = dto;
+    const { categoryId, expirationStart, expirationEnd, ...rest } = dto;
     return this.prisma.product.create({
       data: {
         ...rest,
+        ...(expirationStart && { expirationStart: new Date(expirationStart) }),
+        ...(expirationEnd && { expirationEnd: new Date(expirationEnd) }),
         ...(categoryId && { category: { connect: { id: categoryId } } }),
       },
       include: { category: true },
@@ -72,11 +74,13 @@ export class ProductsService {
   async update(id: string, dto: UpdateProductDto) {
     await this.findOne(id);
 
-    const { categoryId, ...rest } = dto;
+    const { categoryId, expirationStart, expirationEnd, ...rest } = dto;
     return this.prisma.product.update({
       where: { id },
       data: {
         ...rest,
+        ...(expirationStart && { expirationStart: new Date(expirationStart) }),
+        ...(expirationEnd && { expirationEnd: new Date(expirationEnd) }),
         ...(categoryId && { category: { connect: { id: categoryId } } }),
       },
       include: { category: true },

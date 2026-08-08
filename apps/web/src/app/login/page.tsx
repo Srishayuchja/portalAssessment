@@ -109,7 +109,9 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-xs text-gray-400">
-          Seed admin: admin@dealport.dev / Admin@123
+          username - admin@dealport.dev
+          <br />
+          password - Admin@123
         </p>
       </div>
     </div>

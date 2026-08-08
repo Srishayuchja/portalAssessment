@@ -187,7 +187,16 @@ function ProductList() {
                     <ProductStatusBadge status={product.status} />
                   </td>
                   <td className="px-4 py-3 font-medium text-gray-900">
-                    ${Number(product.price).toFixed(2)}
+                    {product.discountPrice ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-900">${Number(product.discountPrice).toFixed(2)}</span>
+                        <span className="text-xs text-gray-400 line-through">
+                          ${Number(product.price).toFixed(2)}
+                        </span>
+                      </div>
+                    ) : (
+                      <span>${Number(product.price).toFixed(2)}</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button

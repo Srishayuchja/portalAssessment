@@ -88,6 +88,7 @@ function AddProductForm() {
   const searchParams = useSearchParams();
   const fromProductId = searchParams.get('from');
   const [categories, setCategories] = useState<Category[]>([]);
+  const [existingTags, setExistingTags] = useState<string[]>([]);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -102,7 +103,6 @@ function AddProductForm() {
   const [stockStatus, setStockStatus] = useState<StockStatus>('IN_STOCK');
   const [featured, setFeatured] = useState(false);
   const [categoryId, setCategoryId] = useState('');
-  const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const expirationStartRef = useRef<HTMLInputElement>(null);
@@ -120,11 +120,25 @@ function AddProductForm() {
     api.getCategories().then(setCategories).catch(() => setCategories([]));
   }, []);
 
+  useEffect(() => {
+    api
+      .getProducts({ limit: 100 })
+      .then((res) => {
+        const unique = Array.from(new Set(res.data.flatMap((p) => p.tags))).sort();
+        setExistingTags(unique);
+      })
+      .catch(() => setExistingTags([]));
+  }, []);
+
   function applyProductToForm(product: Product) {
     setName(product.name);
     setDescription(product.description ?? '');
     setPrice(product.price);
-    setDiscountPrice(product.discountPrice ?? '');
+    // discountPrice is stored as the final sale price, but this form's "Discounted Price"
+    // field represents the amount off — convert back so the Sale= preview stays consistent.
+    setDiscountPrice(
+      product.discountPrice ? String(Number(product.price) - Number(product.discountPrice)) : '',
+    );
     setTaxIncluded(product.taxIncluded);
     setExpirationStart(product.expirationStart?.slice(0, 10) ?? '');
     setExpirationEnd(product.expirationEnd?.slice(0, 10) ?? '');
@@ -186,12 +200,6 @@ function AddProductForm() {
     if (fromProductId) router.replace('/products/new');
   }
 
-  function addTag() {
-    const value = tagInput.trim();
-    if (value && !tags.includes(value)) setTags([...tags, value]);
-    setTagInput('');
-  }
-
   function setMainImage() {
     const url = window.prompt('Image URL')?.trim();
     if (url) setImages((prev) => [url, ...prev.slice(1)]);
@@ -222,7 +230,9 @@ function AddProductForm() {
         name: name.trim(),
         description: description.trim() || undefined,
         price: Number(price),
-        discountPrice: discountPrice ? Number(discountPrice) : undefined,
+        // "Discounted Price" is entered as an amount off; the stored field is the final
+        // sale price, so save Price minus the entered discount, not the raw typed value.
+        discountPrice: discountPrice ? Number(price) - Number(discountPrice) : undefined,
         taxIncluded,
         expirationStart: expirationStart || undefined,
         expirationEnd: expirationEnd || undefined,
@@ -389,15 +399,15 @@ function AddProductForm() {
                     min="0"
                     value={discountPrice}
                     onChange={(e) => setDiscountPrice(e.target.value)}
-                    className="w-full min-w-0 flex-1 bg-transparent py-2 pr-3 pl-1 text-sm outline-none"
+                    className="w-full min-w-0 flex-1 bg-transparent py-2 pr-2 pl-1 text-sm outline-none"
                   />
+                  {Boolean(price) && Boolean(discountPrice) && (
+                    <p className="shrink-0 py-2 pr-3 pl-2 text-xs font-medium whitespace-nowrap text-gray-900">
+                      Sale= {CURRENCY_SYMBOLS[currency]}
+                      {(Number(price) - Number(discountPrice)).toFixed(2)}
+                    </p>
+                  )}
                 </div>
-                {Boolean(price) && Boolean(discountPrice) && Number(discountPrice) < Number(price) && (
-                  <p className="mt-1 text-xs text-primary">
-                    Save ${(Number(price) - Number(discountPrice)).toFixed(2)} (
-                    {Math.round((1 - Number(discountPrice) / Number(price)) * 100)}% off)
-                  </p>
-                )}
               </div>
               <div>
                 <label className={labelClass}>Tax Included</label>
@@ -554,10 +564,10 @@ function AddProductForm() {
             <h3 className={headingClass}>Upload Product Image</h3>
             <p className={`${labelClass} !mt-[25px]`}>Product Image</p>
 
-            <div className="relative !mt-[10px] flex aspect-[160/81] items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+            <div className="relative !mt-[10px] flex aspect-[160/81] items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-4">
               {images[0] ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={images[0]} alt="" className="h-full w-full object-contain" />
+                <img src={images[0]} alt="" className="max-h-full max-w-full object-contain" />
               ) : (
                 <span className="text-xs text-gray-400">No image yet</span>
               )}
@@ -589,14 +599,14 @@ function AddProductForm() {
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-[repeat(5,120px)] gap-[18px]">
               {images.slice(1).map((url, i) => (
                 <div
-                  className="group relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50"
+                  className="group relative flex h-[120px] w-[120px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-2"
                   key={i}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="" className="h-full w-full object-contain object-center" />
+                  <img src={url} alt="" className="max-h-full max-w-full object-contain" />
                   <button
                     type="button"
                     onClick={() => setImages((prev) => prev.filter((_, idx) => idx !== i + 1))}
@@ -609,7 +619,7 @@ function AddProductForm() {
               <button
                 type="button"
                 onClick={addThumbnail}
-                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-primary/40 text-xs font-medium text-primary hover:bg-primary/5"
+                className="flex h-[120px] w-[120px] shrink-0 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-primary/40 text-xs font-medium text-primary hover:bg-primary/5"
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white">
                   <Plus size={14} />
@@ -617,47 +627,74 @@ function AddProductForm() {
                 Add Image
               </button>
             </div>
-            <p className="text-xs text-gray-400">
-              Real file upload is out of scope for this build — paste an image URL instead (documented in README).
-            </p>
           </div>
 
           <div className="space-y-[25px]">
             <h3 className={headingClass}>Categories</h3>
             <div>
               <label className={labelClass}>Product Categories</label>
-              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputClass}>
-                <option value="">Select your category</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className={`${inputClass} appearance-none border-none bg-white pr-9 [box-shadow:0px_1px_3px_0px_#00000033]`}
+                >
+                  <option value="">Select your category</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <svg
+                  width="10"
+                  height="7"
+                  viewBox="0 0 10 7"
+                  fill="currentColor"
+                  className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-400"
+                  aria-hidden="true"
+                >
+                  <path d="M0 0L5 7L10 0H0Z" />
+                </svg>
+              </div>
             </div>
 
             <div>
               <label className={labelClass}>Product Tag</label>
-              <div className="flex gap-2">
-                <input
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addTag();
+              <div className="relative">
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '__new__') {
+                      const newTag = window.prompt('New tag')?.trim();
+                      if (newTag && !tags.includes(newTag)) setTags([...tags, newTag]);
+                      return;
                     }
+                    if (value && !tags.includes(value)) setTags([...tags, value]);
                   }}
-                  placeholder="Type a tag and press Enter"
-                  className={inputClass}
-                />
-                <button
-                  type="button"
-                  onClick={addTag}
-                  className="shrink-0 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  className={`${inputClass} appearance-none border-none bg-white pr-9 [box-shadow:0px_1px_3px_0px_#00000033]`}
                 >
-                  Add
-                </button>
+                  <option value="">
+                    {existingTags.length > 0 ? 'Select an existing tag' : 'No existing tags yet'}
+                  </option>
+                  {existingTags.map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
+                  <option value="__new__">+ Add new tag</option>
+                </select>
+                <svg
+                  width="10"
+                  height="7"
+                  viewBox="0 0 10 7"
+                  fill="currentColor"
+                  className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-400"
+                  aria-hidden="true"
+                >
+                  <path d="M0 0L5 7L10 0H0Z" />
+                </svg>
               </div>
               {tags.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -678,14 +715,14 @@ function AddProductForm() {
 
             <div>
               <label className={labelClass}>Select your color</label>
-              <div className="flex gap-2">
+              <div className="mt-[10px] flex gap-2">
                 {COLOR_SWATCHES.map((color) => (
                   <button
                     type="button"
                     key={color}
                     onClick={() => toggleColor(color)}
                     style={{ backgroundColor: color }}
-                    className={`h-8 w-8 rounded-full border-2 ${
+                    className={`h-8 w-8 rounded-lg border-2 ${
                       colors.includes(color) ? 'border-primary' : 'border-transparent'
                     }`}
                     aria-label={color}
