@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono, Lato, Public_Sans } from 'next/font/google';
+import { Geist, Geist_Mono, Inter, Lato, Public_Sans } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth-context';
 import './globals.css';
 
@@ -25,6 +25,12 @@ const publicSans = Public_Sans({
   subsets: ['latin'],
 });
 
+const inter = Inter({
+  variable: '--font-inter',
+  weight: ['600'],
+  subsets: ['latin'],
+});
+
 export const metadata: Metadata = {
   title: 'DEALPORT Admin',
   description: 'DEALPORT admin dashboard',
@@ -34,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${lato.variable} ${publicSans.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${lato.variable} ${publicSans.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
         <AuthProvider>{children}</AuthProvider>

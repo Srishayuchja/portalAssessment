@@ -9,18 +9,22 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 const TOKEN_KEY = 'dealport_token';
+export const USER_KEY = 'dealport_user';
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
 }
 
-export function setToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
+// remember=true persists the session across browser restarts (localStorage);
+// remember=false keeps it only for the current tab session (sessionStorage).
+export function setToken(token: string, remember: boolean) {
+  (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token);
 }
 
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
 }
 
 class ApiError extends Error {
@@ -45,6 +49,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!res.ok) {
+    if (res.status === 401 && token) {
+      // Stale/expired token: clear the session and bounce back to login instead of
+      // leaving the user stuck on a page where every request silently fails.
+      clearToken();
+      localStorage.removeItem(USER_KEY);
+      window.location.assign('/login');
+    }
+
     const body = await res.json().catch(() => ({}) as { message?: string });
     const message = Array.isArray(body.message)
       ? body.message.join(', ')

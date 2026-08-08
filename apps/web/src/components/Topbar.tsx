@@ -24,12 +24,12 @@ export function Topbar() {
           <img
             src="/assets/images/icons/search.svg"
             alt=""
-            className="pointer-events-none absolute top-1/2 right-3 h-6 w-6 -translate-y-1/2"
+            className="pointer-events-none absolute top-1/2 right-[12px] h-[36px] w-[36px] -translate-y-1/2"
           />
           <input
             type="text"
             placeholder="Search data, users, or reports"
-            className="h-[40px] w-[407px] rounded-full bg-gray-50 pr-9 pl-3 font-normal outline-none placeholder:text-[#000000]/60 focus:ring-1 focus:ring-primary [font-size:15px] [letter-spacing:0.08px] [line-height:100%]"
+            className="h-[40px] w-[407px] rounded-full bg-gray-50 pr-9 pl-[17px] font-normal outline-none placeholder:text-[#000000]/60 focus:ring-1 focus:ring-primary [font-size:15px] [letter-spacing:0.08px] [line-height:100%]"
           />
         </div>
 
