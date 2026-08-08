@@ -210,7 +210,7 @@ export function Sidebar() {
     <aside
       className={clsx(
         'flex h-full shrink-0 flex-col border-r border-gray-200 bg-white transition-[width]',
-        collapsed ? 'w-[80px]' : 'w-[260px]',
+        collapsed ? 'w-[80px]' : 'w-[280px]',
         lato.className,
       )}
     >

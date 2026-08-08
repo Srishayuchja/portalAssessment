@@ -1,10 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useState, type FormEvent } from 'react';
+import { Suspense, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
-import type { Category, StockStatus } from '@/lib/types';
+import type { Category, Product, StockStatus } from '@/lib/types';
 
 const COLOR_SWATCHES = ['#a7f3d0', '#fca5a5', '#93c5fd', '#fde68a', '#111827'];
 
@@ -38,38 +38,86 @@ function AddProductForm() {
   const [tags, setTags] = useState<string[]>([]);
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [images, setImages] = useState<string[]>([]);
+  const [replacingMain, setReplacingMain] = useState(false);
+  const imageUrlInputRef = useRef<HTMLInputElement>(null);
   const [colors, setColors] = useState<string[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [productSearch, setProductSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [showResults, setShowResults] = useState(false);
+
   useEffect(() => {
     api.getCategories().then(setCategories).catch(() => setCategories([]));
   }, []);
 
+  function applyProductToForm(product: Product) {
+    setName(product.name);
+    setDescription(product.description ?? '');
+    setPrice(product.price);
+    setDiscountPrice(product.discountPrice ?? '');
+    setTaxIncluded(product.taxIncluded);
+    setExpirationStart(product.expirationStart?.slice(0, 10) ?? '');
+    setExpirationEnd(product.expirationEnd?.slice(0, 10) ?? '');
+    setStockQuantity(String(product.stockQuantity));
+    setUnlimitedStock(product.unlimitedStock);
+    setStockStatus(product.stockStatus);
+    setFeatured(product.featured);
+    setCategoryId(product.categoryId ?? '');
+    setTags(product.tags);
+    setImages(product.images);
+    setColors(product.colors);
+  }
+
   useEffect(() => {
     if (!fromProductId) return;
-    api
-      .getProduct(fromProductId)
-      .then((product) => {
-        setName(product.name);
-        setDescription(product.description ?? '');
-        setPrice(product.price);
-        setDiscountPrice(product.discountPrice ?? '');
-        setTaxIncluded(product.taxIncluded);
-        setExpirationStart(product.expirationStart?.slice(0, 10) ?? '');
-        setExpirationEnd(product.expirationEnd?.slice(0, 10) ?? '');
-        setStockQuantity(String(product.stockQuantity));
-        setUnlimitedStock(product.unlimitedStock);
-        setStockStatus(product.stockStatus);
-        setFeatured(product.featured);
-        setCategoryId(product.categoryId ?? '');
-        setTags(product.tags);
-        setImages(product.images);
-        setColors(product.colors);
-      })
-      .catch(() => {});
+    api.getProduct(fromProductId).then(applyProductToForm).catch(() => {});
   }, [fromProductId]);
+
+  // "Search product for add": find an existing product to use as a duplicate/template
+  // starting point, same prefill behavior as the dashboard's per-product "Add" button.
+  useEffect(() => {
+    if (!productSearch.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      api
+        .getProducts({ search: productSearch, limit: 5 })
+        .then((res) => setSearchResults(res.data))
+        .catch(() => setSearchResults([]));
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [productSearch]);
+
+  function selectSearchResult(product: Product) {
+    applyProductToForm(product);
+    setProductSearch('');
+    setSearchResults([]);
+    setShowResults(false);
+  }
+
+  function resetForm() {
+    setName('');
+    setDescription('');
+    setPrice('');
+    setDiscountPrice('');
+    setTaxIncluded(true);
+    setExpirationStart('');
+    setExpirationEnd('');
+    setStockQuantity('0');
+    setUnlimitedStock(false);
+    setStockStatus('IN_STOCK');
+    setFeatured(false);
+    setCategoryId('');
+    setTags([]);
+    setImages([]);
+    setColors([]);
+    setError(null);
+    if (fromProductId) router.replace('/products/new');
+  }
 
   function addTag() {
     const value = tagInput.trim();
@@ -79,8 +127,12 @@ function AddProductForm() {
 
   function addImage() {
     const value = imageUrlInput.trim();
-    if (value && !images.includes(value)) setImages([...images, value]);
+    if (value && !images.includes(value)) {
+      // Replacing the main image swaps position 0 instead of appending as a new thumbnail.
+      setImages(replacingMain ? [value, ...images.slice(1)] : [...images, value]);
+    }
     setImageUrlInput('');
+    setReplacingMain(false);
   }
 
   function toggleColor(color: string) {
@@ -125,21 +177,44 @@ function AddProductForm() {
   }
 
   const inputClass =
-    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary';
-  const labelClass = 'mb-1 block text-sm font-medium text-gray-700';
+    'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary';
+  const labelClass =
+    'mb-1 block font-bold text-[#023337] [font-size:15px] [letter-spacing:0%] [line-height:100%]';
+  const headingClass = 'font-bold text-[#23272e] [font-size:22px] [letter-spacing:0%] [line-height:26px]';
 
   return (
     <form className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-gray-900">Add New Product</h2>
-        <div className="flex gap-3">
-          <button
-            onClick={(e) => handleSave('DRAFT', e)}
-            disabled={isSubmitting}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-          >
-            Save to draft
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="relative w-64">
+            <Search size={16} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-400" />
+            <input
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              onFocus={() => setShowResults(true)}
+              onBlur={() => setTimeout(() => setShowResults(false), 150)}
+              placeholder="Search product for add"
+              className="w-full rounded-lg border border-gray-200 bg-white py-2 pr-9 pl-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+            {showResults && searchResults.length > 0 && (
+              <ul className="absolute top-full right-0 z-10 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+                {searchResults.map((product) => (
+                  <li key={product.id}>
+                    <button
+                      type="button"
+                      onMouseDown={() => selectSearchResult(product)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={product.images[0]} alt="" className="h-8 w-8 rounded-md object-cover" />
+                      <span className="truncate">{product.name}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <button
             onClick={(e) => handleSave('PUBLISHED', e)}
             disabled={isSubmitting}
@@ -147,15 +222,34 @@ function AddProductForm() {
           >
             Publish Product
           </button>
+          <button
+            onClick={(e) => handleSave('DRAFT', e)}
+            disabled={isSubmitting}
+            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/assets/images/icons/save.svg" alt="" className="h-4 w-4" />
+            Save to draft
+          </button>
+          <button
+            type="button"
+            onClick={resetForm}
+            aria-label="Start a new product"
+            title="Start a new product"
+            className="rounded-lg border border-gray-300 bg-white p-2.5 hover:bg-gray-50"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/assets/images/icons/addProduct.svg" alt="" className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <section className="space-y-4 rounded-lg border border-gray-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-gray-900">Basic Details</h3>
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[611fr_485fr]">
+        <div className="space-y-8 rounded-lg bg-white p-5 [box-shadow:0px_1px_3px_0px_#00000033]">
+          <div className="space-y-4">
+            <h3 className={headingClass}>Basic Details</h3>
             <div>
               <label className={labelClass}>Product Name</label>
               <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} placeholder="iPhone 15" />
@@ -170,23 +264,39 @@ function AddProductForm() {
                 placeholder="Describe the product..."
               />
             </div>
-          </section>
+          </div>
 
-          <section className="space-y-4 rounded-lg border border-gray-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-gray-900">Pricing</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelClass}>Product Price</label>
+          <div className="space-y-4">
+            <h3 className={headingClass}>Pricing</h3>
+            <div>
+              <label className={labelClass}>Product Price</label>
+              <div className="relative">
                 <input
                   type="number"
                   step="0.01"
                   min="0"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  className={inputClass}
+                  className={`${inputClass} pr-16`}
                   placeholder="999.89"
                 />
+                <span className="pointer-events-none absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1.5 border-l border-gray-200 pl-2 text-xs text-gray-500">
+                  <svg width="16" height="12" viewBox="0 0 16 12" className="rounded-[1px]" aria-hidden="true">
+                    <rect width="16" height="12" fill="#B22234" />
+                    <rect y="0.92" width="16" height="0.92" fill="white" />
+                    <rect y="2.77" width="16" height="0.92" fill="white" />
+                    <rect y="4.62" width="16" height="0.92" fill="white" />
+                    <rect y="6.46" width="16" height="0.92" fill="white" />
+                    <rect y="8.31" width="16" height="0.92" fill="white" />
+                    <rect y="10.15" width="16" height="0.92" fill="white" />
+                    <rect width="7" height="6.46" fill="#3C3B6E" />
+                  </svg>
+                  USD
+                </span>
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>Discounted Price (Optional)</label>
                 <input
@@ -197,20 +307,25 @@ function AddProductForm() {
                   onChange={(e) => setDiscountPrice(e.target.value)}
                   className={inputClass}
                 />
+                {Boolean(price) && Boolean(discountPrice) && Number(discountPrice) < Number(price) && (
+                  <p className="mt-1 text-xs text-primary">
+                    Save ${(Number(price) - Number(discountPrice)).toFixed(2)} (
+                    {Math.round((1 - Number(discountPrice) / Number(price)) * 100)}% off)
+                  </p>
+                )}
               </div>
-            </div>
-
-            <div>
-              <label className={labelClass}>Tax Included</label>
-              <div className="flex gap-4 text-sm text-gray-600">
-                <label className="flex items-center gap-2">
-                  <input type="radio" checked={taxIncluded} onChange={() => setTaxIncluded(true)} />
-                  Yes
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="radio" checked={!taxIncluded} onChange={() => setTaxIncluded(false)} />
-                  No
-                </label>
+              <div>
+                <label className={labelClass}>Tax Included</label>
+                <div className="flex h-[38px] items-center gap-4 text-sm text-gray-600">
+                  <label className="flex items-center gap-2">
+                    <input type="radio" checked={taxIncluded} onChange={() => setTaxIncluded(true)} />
+                    Yes
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="radio" checked={!taxIncluded} onChange={() => setTaxIncluded(false)} />
+                    No
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -234,10 +349,10 @@ function AddProductForm() {
                 />
               </div>
             </div>
-          </section>
+          </div>
 
-          <section className="space-y-4 rounded-lg border border-gray-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-gray-900">Inventory</h3>
+          <div className="space-y-4">
+            <h3 className={headingClass}>Inventory</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>Stock Quantity</label>
@@ -264,41 +379,91 @@ function AddProductForm() {
               </div>
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-gray-600">
-              <input type="checkbox" checked={unlimitedStock} onChange={(e) => setUnlimitedStock(e.target.checked)} />
+            <label className="flex items-center gap-3 text-sm text-gray-600">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={unlimitedStock}
+                onClick={() => setUnlimitedStock((v) => !v)}
+                className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                  unlimitedStock ? 'bg-primary' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+                    unlimitedStock ? 'translate-x-[18px]' : 'translate-x-0.5'
+                  }`}
+                />
+              </button>
               Unlimited
             </label>
             <label className="flex items-center gap-2 text-sm text-gray-600">
-              <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={featured}
+                onChange={(e) => setFeatured(e.target.checked)}
+                className="h-4 w-4 accent-primary"
+              />
               Highlight this product in a featured section.
             </label>
-          </section>
-        </div>
 
-        <div className="space-y-6">
-          <section className="space-y-3 rounded-lg border border-gray-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-gray-900">Upload Image</h3>
-            <div className="flex gap-2">
-              <input
-                value={imageUrlInput}
-                onChange={(e) => setImageUrlInput(e.target.value)}
-                placeholder="https://... image URL"
-                className={inputClass}
-              />
+            <div className="flex justify-end gap-3">
               <button
-                type="button"
-                onClick={addImage}
-                className="shrink-0 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                onClick={(e) => handleSave('DRAFT', e)}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
               >
-                Add
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/assets/images/icons/save.svg" alt="" className="h-4 w-4" />
+                Save to draft
+              </button>
+              <button
+                onClick={(e) => handleSave('PUBLISHED', e)}
+                disabled={isSubmitting}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60"
+              >
+                Publish Product
               </button>
             </div>
-            <p className="text-xs text-gray-400">
-              Real file upload is out of scope for this build — paste an image URL instead (documented in README).
-            </p>
-            {images.length > 0 && (
+          </div>
+        </div>
+
+        <div className="space-y-8 rounded-lg bg-white p-5 [box-shadow:0px_1px_3px_0px_#00000033]">
+          <div className="space-y-3">
+            <h3 className={headingClass}>Upload Product Image</h3>
+            <p className={labelClass}>Product Image</p>
+
+            <div className="relative mx-[5px] flex aspect-[160/81] items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+              {images.length > 0 ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={images[0]} alt="" className="h-full w-full object-contain" />
+              ) : (
+                <span className="text-xs text-gray-400">No image yet</span>
+              )}
+              <button
+                type="button"
+                onClick={() => imageUrlInputRef.current?.focus()}
+                className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+              >
+                Add Image
+              </button>
+              {images.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReplacingMain(true);
+                    imageUrlInputRef.current?.focus();
+                  }}
+                  className="absolute top-3 right-3 flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                >
+                  Replace
+                </button>
+              )}
+            </div>
+
+            {images.length > 1 && (
               <div className="grid grid-cols-3 gap-2">
-                {images.map((url) => (
+                {images.slice(1).map((url) => (
                   <div key={url} className="group relative aspect-square overflow-hidden rounded-lg border border-gray-200">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={url} alt="" className="h-full w-full object-cover" />
@@ -313,10 +478,36 @@ function AddProductForm() {
                 ))}
               </div>
             )}
-          </section>
 
-          <section className="space-y-4 rounded-lg border border-gray-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-gray-900">Categories</h3>
+            <div className="flex gap-2">
+              <input
+                ref={imageUrlInputRef}
+                value={imageUrlInput}
+                onChange={(e) => setImageUrlInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addImage();
+                  }
+                }}
+                placeholder={replacingMain ? 'https://... replacement image URL' : 'https://... image URL'}
+                className={inputClass}
+              />
+              <button
+                type="button"
+                onClick={addImage}
+                className="shrink-0 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                {replacingMain ? 'Replace' : 'Add'}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400">
+              Real file upload is out of scope for this build — paste an image URL instead (documented in README).
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className={headingClass}>Categories</h3>
             <div>
               <label className={labelClass}>Product Categories</label>
               <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputClass}>
@@ -386,7 +577,7 @@ function AddProductForm() {
                 ))}
               </div>
             </div>
-          </section>
+          </div>
         </div>
       </div>
     </form>
